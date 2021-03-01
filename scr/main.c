@@ -41,6 +41,7 @@ struct lol op[]  = { "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaa
 vita2d_pgf *pgf;
 vita2d_pvf *pvf;
 vita2d_texture *img[5] = {NULL, NULL, NULL, NULL, NULL};
+vita2d_texture *phone ;
 int scrol = 0;
 int touchs[2];
 int massuge;
@@ -77,7 +78,7 @@ struct chel men[10] = {
 };
 
 struct masseges mes[] = {
-	{"kot" , "s" , 1 , 0, "32" , "10:23"}, 
+	{"men[0].name" , "s" , 1 , 0, "32" , "10:23"}, 
 	{"kot" , "s" , 1 , 1 , "64" , "10:23"},
 	{"name" , "s" , 1 , 0, "hello men" , "10:23"}, 
 	{"name" , "s" , 1 , 0, "hello men" , "10:23"}, 
@@ -118,8 +119,9 @@ int viewMassage(int cnl){
 	int i = 0;
 	endDraw = 360;
 	int n = sizeof(mes)/sizeof(mes[0]);
-	vita2d_pgf_draw_textf(pgf, 700, 70, BLUE, 1.3f , " %s", channel[cnl]);	
-
+	vita2d_draw_rectangle(0, 0, 300, 900, RGBA8(43, 43, 43, 150));
+		
+	vita2d_draw_texture(img[1] , 7, 10);
 	for(struct masseges *p=mes; p < mes+n; p++){
 
 		vita2d_draw_texture(img[p->usrid], 313, endDraw + scrol);
@@ -128,6 +130,25 @@ int viewMassage(int cnl){
 		vita2d_pgf_draw_textf(pgf, 480, endDraw + scrol, WHITE, 0.5f , " %s", p->time );	
 		endDraw -= 80;
 		i++;
+	}
+	vita2d_pgf_draw_textf(pgf, 75, 32, WHITE, 1.3f , "%s", channel[cnl]);
+	endDraw= 100;
+	i=0;
+	while (i <5){	
+		vita2d_pgf_draw_textf(pgf, 20, endDraw, RGBA8(178, 178, 178, 225), 1.0f , "# %s    %d", channel[i], endDraw );
+		if (cnl == i ){
+				vita2d_pgf_draw_textf(pgf, 20, endDraw, WHITE, 1.0f , "# %s    %d", channel[i], endDraw );
+		}
+		
+		if (touchs[1] > endDraw -17 && touchs[1] < endDraw +33 && touchs[0] < 400 && touchs[0]> 0 && tap == 0){
+			massuge =i;
+			tap = 1;
+			scrol = 0;
+			
+		}
+		endDraw += 50;
+		i++;
+		//if (canals[i] == 0) break;
 	}
 	return 1;
 }
@@ -179,7 +200,7 @@ int main(){
 	pvf = vita2d_load_default_pvf();
 	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
 	SceCtrlData ctrl;
-
+	phone  = vita2d_load_PNG_file("ux0:data/VitaPad/phone.png");
 	int texturi = 5;
 	while (texturi != 0)
 	{	--texturi;
@@ -187,6 +208,7 @@ int main(){
 		img[texturi] = vita2d_load_PNG_file(hil);
 		
 	}
+	
 	int can = 0;
 	massuge = 1;
 	int	 i=0;
@@ -195,7 +217,7 @@ int main(){
 		
 		vita2d_start_drawing();
 		vita2d_clear_screen();
-		
+		vita2d_draw_texture(phone  , 0,0 );
     	endDraw=550;
 		getTach();
 		sceCtrlPeekBufferPositive(0, &ctrl, 1);
