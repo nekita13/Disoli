@@ -46,7 +46,8 @@ int scrol = 0;
 int touchs[2];
 int massuge;
 int tap;
-
+int scrol1 = 1; 
+int can = 0;
 
 // новая, Правильная эра
 struct chel{// это просто для удобства
@@ -124,14 +125,14 @@ int viewMassage(int cnl){
 	vita2d_draw_texture(img[1] , 7, 10);
 	for(struct masseges *p=mes; p < mes+n; p++){
 
-		vita2d_draw_texture(img[p->usrid], 313, endDraw + scrol);
-		vita2d_pgf_draw_textf(pgf, 380, endDraw + scrol, WHITE, 1.0f , " %s", p->name );	
-		vita2d_pgf_draw_textf(pgf, 380, endDraw + 26 + scrol, WHITE , 0.8f , " %s", p->content );	
-		vita2d_pgf_draw_textf(pgf, 480, endDraw + scrol, WHITE, 0.5f , " %s", p->time );	
+		vita2d_draw_texture(img[p->usrid], 310 , endDraw + scrol - 14);
+		vita2d_pgf_draw_textf(pgf, 380, endDraw + scrol, WHITE, 1.3f , " %s", p->name );	
+		vita2d_pgf_draw_textf(pgf, 380, endDraw + 26 + scrol, WHITE , 1.0f , " %s   %d", p->content, scrol1 );	
+		vita2d_pgf_draw_textf(pgf, 480, endDraw + scrol, WHITE, 0.8f , " %s", p->time );	
 		endDraw -= 80;
 		i++;
 	}
-	vita2d_pgf_draw_textf(pgf, 75, 32, WHITE, 1.3f , "%s", channel[cnl]);
+	vita2d_pgf_draw_textf(pgf, 75, 32, WHITE, 1.3f , "%s", server_name[can]);
 	endDraw= 100;
 	i=0;
 	while (i <5){	
@@ -144,7 +145,6 @@ int viewMassage(int cnl){
 			massuge =i;
 			tap = 1;
 			scrol = 0;
-			
 		}
 		endDraw += 50;
 		i++;
@@ -209,7 +209,7 @@ int main(){
 		
 	}
 	
-	int can = 0;
+	
 	massuge = 1;
 	int	 i=0;
 	int buttonTap = 0;
@@ -227,6 +227,8 @@ int main(){
 		}else buttonTap = 0;// это выходы из подменюшек
 		if (ctrl.buttons == (SCE_CTRL_UP )  ) scrol += 1;// скрол, потом сдеалю на сосок
 		if (ctrl.buttons == (SCE_CTRL_DOWN )  ) scrol -= 1;
+		if (ctrl.buttons == (SCE_CTRL_LEFT )  ) scrol1 += 1;// скрол, потом сдеалю на сосок
+		if (ctrl.buttons == (SCE_CTRL_RIGHT )  ) scrol1 -= 1;
 		switch (drawMode){ //тута мы смотрим что рисовать и рисуем
 			case 0: // список серверов
 				i = 4;
