@@ -45,8 +45,14 @@ SceCtrlData ctrl;
 int touchs[2];
 int massuge;
 int can = 0;
-
+int serverid = 0;
 // новая, Правильная эра
+struct servers{
+	char name[50];
+	int id;
+	char path[50];
+
+};
 struct chel{// это просто для удобства
 	char name[30];
 	int id;
@@ -58,8 +64,7 @@ struct channels
 	int id;
 	char type[30];
 };
-struct masseges
-{
+struct masseges{
 	char name[30];
 	char nickn[30];
 	int msgid;
@@ -71,16 +76,17 @@ struct mark { // это маркеры сгрупированные для уд�
 	int tap;
 	int buttonTap;
 	int scrollX;
-	int scrollY;
+	int scrollServ;
 	int drawMode;
+	int RMeny;
 
 } ;
 struct mark mark;
 struct chel men[10] = {
 	{"nikita" , 1 , "ux0:data/VitaPad/kot32.png"},
 	{"andrei" , 2 , "ux0:data/VitaPad/kot64.png"},
-	{"degroid228" , 3 ,  "ux0:data/VitaPad/8.png"},
-	{"simpl" , 4 , "ux0:data/VitaPad/7.png"}
+	{"degroid228" , 3 ,  "ux0:data/VitaPad/kot64.png"},
+	{"simpl" , 4 , "ux0:data/VitaPad/kot64.png"}
 };
 
 struct masseges mes[] = {
@@ -96,9 +102,18 @@ struct masseges mes[] = {
 	{"name" , "s" , 1 , 1 , "hello ginro" , "10:23"}
 }; 
 
+struct servers serv[]= {
+	{"lokalhost" , 0 ,"ux0:data/VitaPad/12.png" },
+	{"seweranka" , 1 , "ux0:data/VitaPad/11.png"},
+	{"какойто сервер" ,1,"ux0:data/VitaPad/8.png"},
+	{"Steamquail", 1,"ux0:data/VitaPad/7.png" },
+	{"llllooolllliii", 1,"ux0:data/VitaPad/9.png"},
+	{"godot" , 1,"ux0:data/VitaPad/7.png" }
 
+};
 
-int  getTach(){
+// тута начинаются функции
+int  getTach(){// опрашиваем сенсор и пишым значение в touchs
 	
 	sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, 1);
 	sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, 1);
@@ -147,7 +162,7 @@ int cannalBlok( int cnl){ // это блок который находится �
 
 }
 
-int viewMassage(int cnl){
+int viewMassage(int cnl){// основная вызываемая функция, отоброжает сообщения и каналы
 	int i = 0;
 	endDraw = 360;
 	int n = sizeof(mes)/sizeof(mes[0]);
@@ -169,11 +184,12 @@ int viewMassage(int cnl){
 		}
 
 	}
+	if (mark.RMeny == 1 ) viewServer();
 	
 	return 1;
 }
 
-int viewCanall(int id){
+/* int viewCanall(int id){ 
 	int i =0 ;
 	endDraw = 30 +30 + mark.scrollX;
 	vita2d_draw_texture( img[id], 20, 40);
@@ -197,29 +213,49 @@ int viewCanall(int id){
 
 	return 1;
 }	
+*/
 
-int viewServer(int id,  int plase ){
-	
-	
-	plase -= 130 ;
+int viewServer(){// менюшка которая вылазт справа и показывает сервера
+	int endDraw = 50 ;
+	int i = 0;
+	int n = sizeof(serv)/sizeof(serv[0]);
+	vita2d_draw_rectangle( 300 , 0 ,700 , 600, RGBA8(43, 43, 43, 200));
+	for(struct servers *p=serv; p < serv+n; p++){
+		vita2d_draw_texture(img[p->id], 310 , endDraw + mark.scrollServ - 17 );
+		vita2d_pgf_draw_textf(pgf, 380, endDraw + mark.scrollServ + 5, RGBA8(178, 178, 178, 225), 1.3f , " %s", p->name );	
+		if (i == serverid) vita2d_pgf_draw_textf(pgf, 380, endDraw + mark.scrollServ +5 , WHITE, 1.3f , " %s", p->name );	
 
-	vita2d_draw_texture(img[1], 20, plase + mark.scrollX);
-    vita2d_pgf_draw_textf(pgf, 150, plase+ 80 + mark.scrollX, WHITE, 1.5f, "%s   %d", server_name[id], plase);
+		if (touchs[1] > endDraw + mark.scrollServ -17 && touchs[1] < endDraw + mark.scrollServ +40 && touchs[0] > 300 && touchs[0]< 960 && mark.tap == 0){
+			serverid =i;
+			mark.tap = 1;
+			mark.scrollX = 0;
 
-	return plase;
+		}
+		endDraw += 80;
+		i++;
+	}
+	vita2d_draw_rectangle( 300 , 0 ,700 , 40, RGBA8(43, 43, 43, 255));
+	vita2d_pgf_draw_textf(pgf, 320, 30, WHITE, 1.3f , "Servers");
+	return 1;
 }
 
-int mode = 0;
-int control(){
+int mode = 20;
+int control(){// обновление буфера нажатий и проверка кнопок
 
 	sceCtrlPeekBufferPositive(0, &ctrl, 1);
+	if (ctrl.buttons == 0) mark.buttonTap = 0;
 	if (ctrl.buttons == (SCE_CTRL_CIRCLE ) && mark.drawMode > 0 ) {
 		if (mark.buttonTap == 0) mark.drawMode -= 1;
 	  	mark.buttonTap = 1 ;
-	}else mark.buttonTap = 0;// это выходы из подменюшек
+	} // это выходы из подменюшек
 	if (ctrl.ly <110 || ctrl.ly > 140){
-		mark.scrollX += lerp((ctrl.ly - 115), 255- 115 , mode) ;
+		if (mark.RMeny == 1 ) mark.scrollServ += lerp((ctrl.ly - 115), 255- 115 , mode) ;
+		else mark.scrollX += lerp((ctrl.ly - 115), 255- 115 , mode) ;
 
+	} 
+	if (ctrl.buttons == (SCE_CTRL_RTRIGGER ) && mark.buttonTap == 0  ) {
+		if (mark.RMeny ==0 ) mark.RMeny = 1 ;else mark.RMeny=0;	
+		mark.buttonTap = 1; 
 	} 
 	if (ctrl.buttons == (SCE_CTRL_UP )  ) mark.scrollX += 1;// скрол, потом сдеалю на сосок
 	if (ctrl.buttons == (SCE_CTRL_DOWN )  ) mark.scrollX -= 1;
@@ -247,7 +283,6 @@ int main(){
 	
 	mark.drawMode = 2;
 	massuge = 1;
-	int	 i=0;
 
 	while (1) {
 		
@@ -259,23 +294,11 @@ int main(){
 		endDraw=550;
 		switch (mark.drawMode){ //тута мы смотрим что рисовать и рисуем
 			case 0: // список серверов
-				i = 4;
-				while (i > -1 ){
-					endDraw = viewServer(i, endDraw);
-					
-					if (touchs[1] > endDraw && touchs[1] < endDraw +130 && touchs[0] < 400 && touchs[0]> 0 && mark.tap == 0){
-						can =i;
-						mark.drawMode = 1;
-						mark.tap =1;
-						mark.scrollX = 0;
-						break;
-					}
-					i--;
-				}
+				endDraw = viewServer();
 			break;
 			
 			case 1 :// список каналов хотя возможно стоит бьединить последнии два пункта
-				mark.drawMode = viewCanall(can); // в принципе она нахер не нужна
+				//mark.drawMode = viewCanall(can); // в принципе она нахер не нужна СОГЛАСЕН
 			break;
 
 			case 2 :// сообщения
