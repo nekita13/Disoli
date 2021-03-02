@@ -161,7 +161,14 @@ int viewMassage(int cnl){
 		endDraw -= 80;
 		i++;
 	}
-	
+	if (mark.scrollX > 800 ) {
+		vita2d_draw_rectangle(890, 400, 40, 40, RGBA8(43, 43, 43, 100));
+		if (touchs[1] > 400 && touchs[1] < 440 && touchs[0] < 930 && touchs[0]> 890 && mark.tap == 0) {
+			mark.tap= 1;
+			mark.scrollX = 0; 
+		}
+
+	}
 	
 	return 1;
 }
@@ -286,7 +293,7 @@ int main(){
 		
 
 
-        vita2d_pvf_draw_textf(pvf , 80, 130, RED , 1.0f, "while working  %d %d clearInput %d %d %d btap %d" , mark.scrollX , mode, ctrl.ly , (ctrl.ly - 115), mark.drawMode, mark.buttonTap);
+        //vita2d_pvf_draw_textf(pvf , 80, 130, RED , 1.0f, "while working  %d %d clearInput %d %d %d btap %d" , mark.scrollX , mode, ctrl.ly , (ctrl.ly - 115), mark.drawMode, mark.buttonTap);
 		vita2d_end_drawing();
 		vita2d_swap_buffers();
 	}
