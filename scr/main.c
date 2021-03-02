@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-
+#include <stdlib.h>
 #include <psp2/ctrl.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/touch.h> 
@@ -35,18 +35,15 @@ struct lol{// структра с сообщениями
 	  char massage[99];
 	  char time[20];
 } ;
-int drawMode = 2;
 struct lol op[]  = { "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20"} ;
 
 vita2d_pgf *pgf;
 vita2d_pvf *pvf;
 vita2d_texture *img[5] = {NULL, NULL, NULL, NULL, NULL};
 vita2d_texture *phone ;
-int scrol = 0;
+SceCtrlData ctrl;
 int touchs[2];
 int massuge;
-int tap;
-int scrol1 = 1; 
 int can = 0;
 
 // новая, Правильная эра
@@ -70,7 +67,15 @@ struct masseges
 	char content[30];
 	char time[30];
 };
- 
+struct mark { // это маркеры сгрупированные для удобства
+	int tap;
+	int buttonTap;
+	int scrollX;
+	int scrollY;
+	int drawMode;
+
+} ;
+struct mark mark;
 struct chel men[10] = {
 	{"nikita" , 1 , "ux0:data/VitaPad/kot32.png"},
 	{"andrei" , 2 , "ux0:data/VitaPad/kot64.png"},
@@ -111,60 +116,68 @@ int  getTach(){
 		else{
 			touchs[0] = -500;
 			touchs[1] = 0;
-			tap = 0;
+			mark.tap = 0;
 		}
 	return 1;
 }
 
-int viewMassage(int cnl){
-	int i = 0;
-	endDraw = 360;
-	int n = sizeof(mes)/sizeof(mes[0]);
+int cannalBlok( int cnl){ // это блок который находится слева
+	int i=0;
+	int endDraw= 100;
 	vita2d_draw_rectangle(0, 0, 300, 900, RGBA8(43, 43, 43, 150));
-		
 	vita2d_draw_texture(img[1] , 7, 10);
-	for(struct masseges *p=mes; p < mes+n; p++){
 
-		vita2d_draw_texture(img[p->usrid], 310 , endDraw + scrol - 14);
-		vita2d_pgf_draw_textf(pgf, 380, endDraw + scrol, WHITE, 1.3f , " %s", p->name );	
-		vita2d_pgf_draw_textf(pgf, 380, endDraw + 26 + scrol, WHITE , 1.0f , " %s   %d", p->content, scrol1 );	
-		vita2d_pgf_draw_textf(pgf, 480, endDraw + scrol, WHITE, 0.8f , " %s", p->time );	
-		endDraw -= 80;
-		i++;
-	}
-	vita2d_pgf_draw_textf(pgf, 75, 32, WHITE, 1.3f , "%s", server_name[can]);
-	endDraw= 100;
-	i=0;
 	while (i <5){	
 		vita2d_pgf_draw_textf(pgf, 20, endDraw, RGBA8(178, 178, 178, 225), 1.0f , "# %s    %d", channel[i], endDraw );
 		if (cnl == i ){
 				vita2d_pgf_draw_textf(pgf, 20, endDraw, WHITE, 1.0f , "# %s    %d", channel[i], endDraw );
 		}
 		
-		if (touchs[1] > endDraw -17 && touchs[1] < endDraw +33 && touchs[0] < 400 && touchs[0]> 0 && tap == 0){
+		if (touchs[1] > endDraw -17 && touchs[1] < endDraw +33 && touchs[0] < 400 && touchs[0]> 0 && mark.tap == 0){// обработка нажатий и изменение канала
 			massuge =i;
-			tap = 1;
-			scrol = 0;
+			mark.tap = 1;
+			mark.scrollX = 0;
 		}
 		endDraw += 50;
 		i++;
 		//if (canals[i] == 0) break;
 	}
+	vita2d_pgf_draw_textf(pgf, 75, 32, WHITE, 1.3f , "%s", server_name[can]);
+	return 1 ;
+
+}
+
+int viewMassage(int cnl){
+	int i = 0;
+	endDraw = 360;
+	int n = sizeof(mes)/sizeof(mes[0]);
+	cannalBlok(cnl);
+	for(struct masseges *p=mes; p < mes+n; p++){
+
+		vita2d_draw_texture(img[p->usrid], 310 , endDraw + mark.scrollX - 14);
+		vita2d_pgf_draw_textf(pgf, 380, endDraw + mark.scrollX, WHITE, 1.3f , " %s", p->name );	
+		vita2d_pgf_draw_textf(pgf, 380, endDraw + 26 + mark.scrollX, WHITE , 1.0f , " %s   %d", p->content, mark.scrollX );	
+		vita2d_pgf_draw_textf(pgf, 480, endDraw + mark.scrollX, WHITE, 0.8f , " %s", p->time );	
+		endDraw -= 80;
+		i++;
+	}
+	
+	
 	return 1;
 }
 
 int viewCanall(int id){
 	int i =0 ;
-	endDraw = 30 +30 + scrol;
+	endDraw = 30 +30 + mark.scrollX;
 	vita2d_draw_texture( img[id], 20, 40);
 	vita2d_pgf_draw_textf(pgf, 40, endDraw, WHITE, 1.0f , "# %s", server_name[id] );	
 	while (i <5){	
 		vita2d_pgf_draw_textf(pgf, 170, endDraw, WHITE, 1.0f , "# %s    %d", channel[i], endDraw );
 		
-		if (touchs[1] > endDraw -17 && touchs[1] < endDraw +33 && touchs[0] < 400 && touchs[0]> 0 && tap == 0){
+		if (touchs[1] > endDraw -17 && touchs[1] < endDraw +33 && touchs[0] < 400 && touchs[0]> 0 && mark.tap == 0){
 			massuge =i;
-			tap = 1;
-			scrol = 0;
+			mark.tap = 1;
+			mark.scrollX = 0;
 			return 2;
 
 			break;
@@ -183,63 +196,71 @@ int viewServer(int id,  int plase ){
 	
 	plase -= 130 ;
 
-	vita2d_draw_texture(img[1], 20, plase + scrol);
-    vita2d_pgf_draw_textf(pgf, 150, plase+ 80 + scrol, WHITE, 1.5f, "%s   %d", server_name[id], plase);
+	vita2d_draw_texture(img[1], 20, plase + mark.scrollX);
+    vita2d_pgf_draw_textf(pgf, 150, plase+ 80 + mark.scrollX, WHITE, 1.5f, "%s   %d", server_name[id], plase);
 
 	return plase;
 }
 
-int endFor = 5;
+int mode = 0;
+int control(){
+
+	sceCtrlPeekBufferPositive(0, &ctrl, 1);
+	if (ctrl.buttons == (SCE_CTRL_CIRCLE ) && mark.drawMode > 0 ) {
+		if (mark.buttonTap == 0) mark.drawMode -= 1;
+	  	mark.buttonTap = 1 ;
+	}else mark.buttonTap = 0;// это выходы из подменюшек
+	if (ctrl.ly <110 || ctrl.ly > 140){
+		mark.scrollX += lerp((ctrl.ly - 115), 255- 115 , mode) ;
+
+	} 
+	if (ctrl.buttons == (SCE_CTRL_UP )  ) mark.scrollX += 1;// скрол, потом сдеалю на сосок
+	if (ctrl.buttons == (SCE_CTRL_DOWN )  ) mark.scrollX -= 1;
+	if (ctrl.buttons == (SCE_CTRL_LEFT )  ) mode += 1;// скрол, потом сдеалю на сосок
+	if (ctrl.buttons == (SCE_CTRL_RIGHT )  ) mode -= 1;
+
+	return 1; 
+} 
 
 int main(){
 	
 	vita2d_init();
 	vita2d_set_clear_color(RGBA8(0x40, 0x40, 0x40, 0xFF));
-
 	pgf = vita2d_load_default_pgf();
 	pvf = vita2d_load_default_pvf();
 	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
-	SceCtrlData ctrl;
-	phone  = vita2d_load_PNG_file("ux0:data/VitaPad/phone.png");
+	phone  = vita2d_load_PNG_file("ux0:data/VitaPad/phone.png"); //это импорт и загрузка фона в память 
 	int texturi = 5;
-	while (texturi != 0)
+	while (texturi != 0) // это загрузка текстур в память в переменную img
 	{	--texturi;
 		char *  hil = men[texturi].pikch ;
 		img[texturi] = vita2d_load_PNG_file(hil);
 		
 	}
 	
-	
+	mark.drawMode = 2;
 	massuge = 1;
 	int	 i=0;
-	int buttonTap = 0;
+
 	while (1) {
 		
 		vita2d_start_drawing();
 		vita2d_clear_screen();
-		vita2d_draw_texture(phone  , 0,0 );
-    	endDraw=550;
+		vita2d_draw_texture(phone  , 0,0 ); // рисуем фон
 		getTach();
-		sceCtrlPeekBufferPositive(0, &ctrl, 1);
-		if (ctrl.buttons == (SCE_CTRL_CIRCLE ) && drawMode > 0 ) {
-			if (buttonTap == 0) drawMode -= 1;
-		  	buttonTap = 1 ;
-		}else buttonTap = 0;// это выходы из подменюшек
-		if (ctrl.buttons == (SCE_CTRL_UP )  ) scrol += 1;// скрол, потом сдеалю на сосок
-		if (ctrl.buttons == (SCE_CTRL_DOWN )  ) scrol -= 1;
-		if (ctrl.buttons == (SCE_CTRL_LEFT )  ) scrol1 += 1;// скрол, потом сдеалю на сосок
-		if (ctrl.buttons == (SCE_CTRL_RIGHT )  ) scrol1 -= 1;
-		switch (drawMode){ //тута мы смотрим что рисовать и рисуем
+		control();
+		endDraw=550;
+		switch (mark.drawMode){ //тута мы смотрим что рисовать и рисуем
 			case 0: // список серверов
 				i = 4;
 				while (i > -1 ){
 					endDraw = viewServer(i, endDraw);
 					
-					if (touchs[1] > endDraw && touchs[1] < endDraw +130 && touchs[0] < 400 && touchs[0]> 0 && tap == 0){
+					if (touchs[1] > endDraw && touchs[1] < endDraw +130 && touchs[0] < 400 && touchs[0]> 0 && mark.tap == 0){
 						can =i;
-						drawMode = 1;
-						tap =1;
-						scrol = 0;
+						mark.drawMode = 1;
+						mark.tap =1;
+						mark.scrollX = 0;
 						break;
 					}
 					i--;
@@ -247,7 +268,7 @@ int main(){
 			break;
 			
 			case 1 :// список каналов хотя возможно стоит бьединить последнии два пункта
-				drawMode = viewCanall(can);
+				mark.drawMode = viewCanall(can); // в принципе она нахер не нужна
 			break;
 
 			case 2 :// сообщения
@@ -256,16 +277,16 @@ int main(){
 			case 228: // предупреждение о ошибке)) 
 				vita2d_pgf_draw_textf(pgf, 0, 200, RED, 2.0f , "програмист гдето обосрался  (; ");	
 				vita2d_pgf_draw_textf(pgf, 0, 300, LIME, 2.0f , "жмыхни по экрану шоб вернутся ");	
-				if (touchs[0] >0) drawMode =0;
+				if (touchs[0] >0) mark.drawMode =0;
 			break;
 			default:
-				drawMode = 228;
+				mark.drawMode = 228;
 			break;
 		}
 		
 
 
-        vita2d_pvf_draw_textf(pvf , 80, 130, RED , 1.0f, "while working надеюсь что это говно заработает %d %d %d %d %d btap %d" , touchs[0] , touchs[1], can , i, drawMode, buttonTap);
+        vita2d_pvf_draw_textf(pvf , 80, 130, RED , 1.0f, "while working  %d %d clearInput %d %d %d btap %d" , mark.scrollX , mode, ctrl.ly , (ctrl.ly - 115), mark.drawMode, mark.buttonTap);
 		vita2d_end_drawing();
 		vita2d_swap_buffers();
 	}
