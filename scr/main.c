@@ -46,6 +46,7 @@ int touchs[2];
 int massuge;
 int can = 0;
 int serverid = 0;
+int iserv = 0;
 // новая, Правильная эра
 struct servers{
 	char name[50];
@@ -89,8 +90,8 @@ struct chel men[10] = {
 	{"simpl" , 4 , "ux0:data/VitaPad/kot64.png"}
 };
 
-struct masseges mes[] = {
-	{"men[0].name" , "s" , 1 , 0, "32" , "10:23"}, 
+struct masseges mes[50] = {
+	{ "men[0].&name ", "s" , 1 , 0, "32" , "10:23"}, 
 	{"kot" , "s" , 1 , 1 , "64" , "10:23"},
 	{"name" , "s" , 1 , 0, "hello men" , "10:23"}, 
 	{"name" , "s" , 1 , 0, "hello men" , "10:23"}, 
@@ -184,7 +185,18 @@ int viewMassage(int cnl){// основная вызываемая функция
 		}
 
 	}
-	if (mark.RMeny == 1 ) viewServer();
+	if (mark.RMeny == 1 ) {// анимация выезда менюшки
+		if (iserv > 300) iserv-= 10;
+		if (iserv > 300) iserv-= 10;
+		if (iserv > 300) iserv-= 10;
+		if (iserv > 300) iserv-= 10;
+		if (iserv > 300) iserv-= 10;
+		if (iserv > 300) iserv-= 10;
+		if (iserv > 300) iserv-= 10;
+		if (iserv > 300) iserv-= 10;
+
+		viewServer(iserv);
+	}
 	
 	return 1;
 }
@@ -215,15 +227,26 @@ int viewMassage(int cnl){// основная вызываемая функция
 }	
 */
 
-int viewServer(){// менюшка которая вылазт справа и показывает сервера
+int init(){
+	int i = 0;
+	int n = sizeof(men)/sizeof(men[0]);
+	for(struct chel *p=men; p < men+n; p++){
+	strcpy( mes[i].name , p->name);
+		i++;
+	}
+
+	return 1;
+}
+
+int viewServer(int draw){// менюшка которая вылазт справа и показывает сервера
 	int endDraw = 50 ;
 	int i = 0;
 	int n = sizeof(serv)/sizeof(serv[0]);
-	vita2d_draw_rectangle( 300 , 0 ,700 , 600, RGBA8(43, 43, 43, 200));
+	vita2d_draw_rectangle( draw , 0 ,700 , 600, RGBA8(43, 43, 43, 200));
 	for(struct servers *p=serv; p < serv+n; p++){
-		vita2d_draw_texture(img[p->id], 310 , endDraw + mark.scrollServ - 17 );
-		vita2d_pgf_draw_textf(pgf, 380, endDraw + mark.scrollServ + 5, RGBA8(178, 178, 178, 225), 1.3f , " %s", p->name );	
-		if (i == serverid) vita2d_pgf_draw_textf(pgf, 380, endDraw + mark.scrollServ +5 , WHITE, 1.3f , " %s", p->name );	
+		vita2d_draw_texture(img[p->id], draw + 10 , endDraw + mark.scrollServ - 17 );
+		vita2d_pgf_draw_textf(pgf, draw + 80, endDraw + mark.scrollServ + 5, RGBA8(178, 178, 178, 225), 1.3f , " %s", p->name );	
+		if (i == serverid) vita2d_pgf_draw_textf(pgf, draw + 80, endDraw + mark.scrollServ +5 , WHITE, 1.3f , " %s", p->name );	
 
 		if (touchs[1] > endDraw + mark.scrollServ -17 && touchs[1] < endDraw + mark.scrollServ +40 && touchs[0] > 300 && touchs[0]< 960 && mark.tap == 0){
 			serverid =i;
@@ -234,8 +257,8 @@ int viewServer(){// менюшка которая вылазт справа и �
 		endDraw += 80;
 		i++;
 	}
-	vita2d_draw_rectangle( 300 , 0 ,700 , 40, RGBA8(43, 43, 43, 255));
-	vita2d_pgf_draw_textf(pgf, 320, 30, WHITE, 1.3f , "Servers");
+	vita2d_draw_rectangle( draw , 0 ,700 , 40, RGBA8(43, 43, 43, 255));
+	vita2d_pgf_draw_textf(pgf, draw + 20, 30, WHITE, 1.3f , "Servers");
 	return 1;
 }
 
@@ -254,7 +277,7 @@ int control(){// обновление буфера нажатий и прове�
 
 	} 
 	if (ctrl.buttons == (SCE_CTRL_RTRIGGER ) && mark.buttonTap == 0  ) {
-		if (mark.RMeny ==0 ) mark.RMeny = 1 ;else mark.RMeny=0;	
+		if (mark.RMeny ==0 ) mark.RMeny = 1 ;else{mark.RMeny=0 ; iserv = 960;}	
 		mark.buttonTap = 1; 
 	} 
 	if (ctrl.buttons == (SCE_CTRL_UP )  ) mark.scrollX += 1;// скрол, потом сдеалю на сосок
@@ -280,7 +303,7 @@ int main(){
 		img[texturi] = vita2d_load_PNG_file(hil);
 		
 	}
-	
+	init();
 	mark.drawMode = 2;
 	massuge = 1;
 
@@ -294,7 +317,7 @@ int main(){
 		endDraw=550;
 		switch (mark.drawMode){ //тута мы смотрим что рисовать и рисуем
 			case 0: // список серверов
-				endDraw = viewServer();
+				endDraw = viewServer(iserv);
 			break;
 			
 			case 1 :// список каналов хотя возможно стоит бьединить последнии два пункта
