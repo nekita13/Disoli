@@ -4,8 +4,10 @@
 #include <psp2/ctrl.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/touch.h> 
-
+#include <psp2/ime_dialog.h> 
 #include <vita2d.h>
+#include "ime_dialog.h"
+#include <psp2/types.h>
 
 #define SCREEN_W 960
 #define SCREEN_H 544
@@ -22,7 +24,6 @@
 int firstMovingX = 420;
 
 int endDraw = 30;
-
 
 
 char img_file[12][30] = {"ux0:data/VitaPad/12.png" , "ux0:data/VitaPad/11.png", "ux0:data/VitaPad/8.png","ux0:data/VitaPad/7.png" , "ux0:data/VitaPad/9.png","ux0:data/VitaPad/7.png","ux0:data/VitaPad/12.png","ux0:data/VitaPad/11.png", "ux0:data/VitaPad/10.png","ux0:data/VitaPad/11.png","ux0:data/VitaPad/12.png", };// сюда надо пихатть пути к пикчам серваков
@@ -113,6 +114,118 @@ struct servers serv[]= {
 
 };
 
+static int ime_dialog_running = 0;
+
+static uint16_t ime_title_utf16[SCE_IME_DIALOG_MAX_TITLE_LENGTH];
+static uint16_t ime_initial_text_utf16[SCE_IME_DIALOG_MAX_TEXT_LENGTH];
+static uint16_t ime_input_text_utf16[SCE_IME_DIALOG_MAX_TEXT_LENGTH + 1];
+static uint8_t ime_input_text_utf8[SCE_IME_DIALOG_MAX_TEXT_LENGTH + 1];
+char *output = "2";
+int imeStatus;
+
+void utf16_to_utf8(uint16_t *src, uint8_t *dst) {
+    int i;
+    for (i = 0; src[i]; i++) {
+        if ((src[i] & 0xFF80) == 0) {
+            *(dst++) = src[i] & 0xFF;
+        } else if((src[i] & 0xF800) == 0) {
+            *(dst++) = ((src[i] >> 6) & 0xFF) | 0xC0;
+            *(dst++) = (src[i] & 0x3F) | 0x80;
+        } else if((src[i] & 0xFC00) == 0xD800 && (src[i + 1] & 0xFC00) == 0xDC00) {
+            *(dst++) = (((src[i] + 64) >> 8) & 0x3) | 0xF0;
+            *(dst++) = (((src[i] >> 2) + 16) & 0x3F) | 0x80;
+            *(dst++) = ((src[i] >> 4) & 0x30) | 0x80 | ((src[i + 1] << 2) & 0xF);
+            *(dst++) = (src[i + 1] & 0x3F) | 0x80;
+            i += 1;
+        } else {
+            *(dst++) = ((src[i] >> 12) & 0xF) | 0xE0;
+            *(dst++) = ((src[i] >> 6) & 0x3F) | 0x80;
+            *(dst++) = (src[i] & 0x3F) | 0x80;
+        }
+    }
+
+    *dst = '\0';
+}
+
+void utf8_to_utf16(uint8_t *src, uint16_t *dst) {
+    int i;
+    for (i = 0; src[i];) {
+        if ((src[i] & 0xE0) == 0xE0) {
+            *(dst++) = ((src[i] & 0x0F) << 12) | ((src[i + 1] & 0x3F) << 6) | (src[i + 2] & 0x3F);
+            i += 3;
+        } else if ((src[i] & 0xC0) == 0xC0) {
+            *(dst++) = ((src[i] & 0x1F) << 6) | (src[i + 1] & 0x3F);
+            i += 2;
+        } else {
+            *(dst++) = src[i];
+            i += 1;
+        }
+    }
+
+    *dst = '\0';
+}
+
+int initImeDialog(char *title, char *initial_text, int max_text_length, int password) {
+    if (ime_dialog_running)
+        return -1;
+
+    utf8_to_utf16((uint8_t *)title, ime_title_utf16);
+    utf8_to_utf16((uint8_t *)initial_text, ime_initial_text_utf16);
+
+    SceImeDialogParam param;
+    sceImeDialogParamInit(&param);
+
+    param.supportedLanguages = 0x0001FFFF;
+    param.languagesForced = SCE_TRUE;
+    param.type = SCE_IME_TYPE_BASIC_LATIN;
+    param.title = ime_title_utf16;
+    param.maxTextLength = max_text_length;
+    param.initialText = ime_initial_text_utf16;
+    param.inputTextBuffer = ime_input_text_utf16;
+    param.textBoxMode = password;
+
+    int res = sceImeDialogInit(&param);
+    if (res >= 0)
+        ime_dialog_running = 1;
+
+    return res;
+}
+
+int isImeDialogRunning() {
+    return ime_dialog_running;	
+}
+
+uint16_t *getImeDialogInputTextUTF16() {
+    return ime_input_text_utf16;
+}
+
+uint8_t *getImeDialogInputTextUTF8() {
+    return ime_input_text_utf8;
+}
+
+int updateImeDialog() {
+    if (!ime_dialog_running)
+        return IME_DIALOG_RESULT_NONE;
+
+    SceCommonDialogStatus status = sceImeDialogGetStatus();
+    if (status == IME_DIALOG_RESULT_FINISHED) {
+        SceImeDialogResult result;
+        memset(&result, 0, sizeof(SceImeDialogResult));
+        sceImeDialogGetResult(&result);
+
+        if (result.button == SCE_IME_DIALOG_BUTTON_CLOSE) {
+            status = IME_DIALOG_RESULT_CANCELED;
+        } else {
+            utf16_to_utf8(ime_input_text_utf16, ime_input_text_utf8);
+        }
+
+        sceImeDialogTerm();
+
+        ime_dialog_running = 0;
+    }
+
+    return status;
+}
 // тута начинаются функции
 int  getTach(){// опрашиваем сенсор и пишым значение в touchs
 	
@@ -163,6 +276,25 @@ int cannalBlok( int cnl){ // это блок который находится �
 
 }
 
+int drawInput(){ // ввод сообщений, после отправки прировнять output к "", шоб очистить окно
+	vita2d_draw_rectangle(300, 480, 900, 100, RGBA8(43, 43, 43, 230));
+	vita2d_pgf_draw_textf(pgf, 360, 544 - 20, WHITE, 1.3f , " %s", output );	
+
+	vita2d_draw_rectangle(870, 480, 200, 250, RGBA8(43, 43, 43, 250));
+
+	if (touchs[1] > 444 && touchs[1] < 544 && touchs[0] < 860 && touchs[0]> 300 && mark.tap == 0){// открытие окна ввода
+		initImeDialog("input you massege" , output , 212, 0); 
+	}
+	imeStatus = updateImeDialog();
+	if(imeStatus == IME_DIALOG_RESULT_FINISHED){
+		output = (char *)getImeDialogInputTextUTF8();			
+	}
+	if (touchs[1] > 480 && touchs[1] < 544 && touchs[0] < 960 && touchs[0]> 860 && mark.tap == 0){
+		// отправить сообщение
+	}
+	return 1 ;
+}
+
 int viewMassage(int cnl){// основная вызываемая функция, отоброжает сообщения и каналы
 	int i = 0;
 	endDraw = 360;
@@ -185,6 +317,7 @@ int viewMassage(int cnl){// основная вызываемая функция
 		}
 
 	}
+	drawInput();
 	if (mark.RMeny == 1 ) {// анимация выезда менюшки
 		if (iserv > 300) iserv-= 10;
 		if (iserv > 300) iserv-= 10;
@@ -288,6 +421,8 @@ int control(){// обновление буфера нажатий и прове�
 	return 1; 
 } 
 
+
+
 int main(){
 	
 	vita2d_init();
@@ -297,16 +432,17 @@ int main(){
 	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
 	phone  = vita2d_load_PNG_file("ux0:data/VitaPad/phone.png"); //это импорт и загрузка фона в память 
 	int texturi = 5;
+	
 	while (texturi != 0) // это загрузка текстур в память в переменную img
 	{	--texturi;
 		char *  hil = men[texturi].pikch ;
 		img[texturi] = vita2d_load_PNG_file(hil);
 		
 	}
-	init();
+
 	mark.drawMode = 2;
 	massuge = 1;
-
+	
 	while (1) {
 		
 		vita2d_start_drawing();
@@ -315,16 +451,21 @@ int main(){
 		getTach();
 		control();
 		endDraw=550;
+		
 		switch (mark.drawMode){ //тута мы смотрим что рисовать и рисуем
 			case 0: // список серверов
 				endDraw = viewServer(iserv);
+
 			break;
 			
 			case 1 :// список каналов хотя возможно стоит бьединить последнии два пункта
 				//mark.drawMode = viewCanall(can); // в принципе она нахер не нужна СОГЛАСЕН
+
 			break;
 
 			case 2 :// сообщения
+
+			
 				viewMassage(massuge);
 			break;
 			case 228: // предупреждение о ошибке)) 
@@ -335,12 +476,14 @@ int main(){
 			default:
 				mark.drawMode = 228;
 			break;
+			
 		}
 		
 
-
-        //vita2d_pvf_draw_textf(pvf , 80, 130, RED , 1.0f, "while working  %d %d clearInput %d %d %d btap %d" , mark.scrollX , mode, ctrl.ly , (ctrl.ly - 115), mark.drawMode, mark.buttonTap);
+		
+        vita2d_pvf_draw_textf(pvf , 80, 130, RED , 1.0f, "while working  %s touch[1] %d touch[0] %d" , output, touchs[1], touchs[0]);
 		vita2d_end_drawing();
+		vita2d_common_dialog_update();
 		vita2d_swap_buffers();
 	}
 	// конец рендера и выход из программы
