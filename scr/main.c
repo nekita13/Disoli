@@ -36,7 +36,7 @@ struct lol{// структра с сообщениями
 	  char massage[99];
 	  char time[20];
 } ;
-struct lol op[]  = { "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20"} ;
+//struct lol op[]  = { "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20", "wasa" , 1 , "i the God" ,"20:19" , "sidor", 2 , "hahahahaah", "20:19","wasa", 1 , "Fuck you" ,"20:20"} ;
 
 vita2d_pgf *pgf;
 vita2d_pvf *pvf;
@@ -47,7 +47,7 @@ int touchs[2];
 int massuge;
 int can = 0;
 int serverid = 0;
-int iserv = 0;
+int iserv = 960;
 // новая, Правильная эра
 struct servers{
 	char name[50];
@@ -249,7 +249,7 @@ int  getTach(){// опрашиваем сенсор и пишым значени
 		}
 	return 1;
 }
-
+int dir;
 int cannalBlok( int cnl){ // это блок который находится слева
 	int i=0;
 	int endDraw= 100;
@@ -271,7 +271,8 @@ int cannalBlok( int cnl){ // это блок который находится �
 		i++;
 		//if (canals[i] == 0) break;
 	}
-	vita2d_pgf_draw_textf(pgf, 75, 32, WHITE, 1.3f , "%s", server_name[can]);
+	dir = serverid-1;
+	vita2d_pgf_draw_textf(pgf, 75, 32, WHITE, 1.3f , "%s", server_name[dir ]);
 	return 1 ;
 
 }
@@ -282,17 +283,41 @@ int drawInput(){ // ввод сообщений, после отправки п�
 
 	vita2d_draw_rectangle(870, 480, 200, 250, RGBA8(43, 43, 43, 250));
 
-	if (touchs[1] > 444 && touchs[1] < 544 && touchs[0] < 860 && touchs[0]> 300 && mark.tap == 0){// открытие окна ввода
+	if (touchs[1] > 444 && touchs[1] < 544 && touchs[0] < 860 && touchs[0]> 300 && mark.tap == 0 && mark.RMeny != 1){// открытие окна ввода
 		initImeDialog("input you massege" , output , 212, 0); 
 	}
 	imeStatus = updateImeDialog();
 	if(imeStatus == IME_DIALOG_RESULT_FINISHED){
 		output = (char *)getImeDialogInputTextUTF8();			
 	}
-	if (touchs[1] > 480 && touchs[1] < 544 && touchs[0] < 960 && touchs[0]> 860 && mark.tap == 0){
+	if (touchs[1] > 480 && touchs[1] < 544 && touchs[0] < 960 && touchs[0]> 860 && mark.tap == 0 && mark.RMeny != 1){
 		// отправить сообщение
 	}
 	return 1 ;
+}
+
+int viewServer(int draw){// менюшка которая вылазт справа и показывает сервера
+	int endDraw = 50 ;
+	int i = 0;
+	int n = sizeof(serv)/sizeof(serv[0]);
+	vita2d_draw_rectangle( draw , 0 ,700 , 600, RGBA8(43, 43, 43, 200));
+	for(struct servers *p=serv; p < serv+n; p++){
+		vita2d_draw_texture(img[p->id], draw + 10 , endDraw + mark.scrollServ - 17 );
+		vita2d_pgf_draw_textf(pgf, draw + 80, endDraw + mark.scrollServ + 5, RGBA8(178, 178, 178, 225), 1.3f , " %s", p->name );	
+		if (i == serverid) vita2d_pgf_draw_textf(pgf, draw + 80, endDraw + mark.scrollServ +5 , WHITE, 1.3f , " %s", p->name );	
+
+		if (touchs[1] > endDraw + mark.scrollServ -17 && touchs[1] < endDraw + mark.scrollServ +40 && touchs[0] > 300 && touchs[0]< 960 && mark.tap == 0){
+			serverid =i;
+			mark.tap = 1;
+			mark.scrollX = 0;
+
+		}
+		endDraw += 80;
+		i++;
+	}
+	vita2d_draw_rectangle( draw , 0 ,700 , 40, RGBA8(43, 43, 43, 255));
+	vita2d_pgf_draw_textf(pgf, draw + 20, 30, WHITE, 1.3f , "Servers");
+	return 1;
 }
 
 int viewMassage(int cnl){// основная вызываемая функция, отоброжает сообщения и каналы
@@ -371,37 +396,14 @@ int init(){
 	return 1;
 }
 
-int viewServer(int draw){// менюшка которая вылазт справа и показывает сервера
-	int endDraw = 50 ;
-	int i = 0;
-	int n = sizeof(serv)/sizeof(serv[0]);
-	vita2d_draw_rectangle( draw , 0 ,700 , 600, RGBA8(43, 43, 43, 200));
-	for(struct servers *p=serv; p < serv+n; p++){
-		vita2d_draw_texture(img[p->id], draw + 10 , endDraw + mark.scrollServ - 17 );
-		vita2d_pgf_draw_textf(pgf, draw + 80, endDraw + mark.scrollServ + 5, RGBA8(178, 178, 178, 225), 1.3f , " %s", p->name );	
-		if (i == serverid) vita2d_pgf_draw_textf(pgf, draw + 80, endDraw + mark.scrollServ +5 , WHITE, 1.3f , " %s", p->name );	
-
-		if (touchs[1] > endDraw + mark.scrollServ -17 && touchs[1] < endDraw + mark.scrollServ +40 && touchs[0] > 300 && touchs[0]< 960 && mark.tap == 0){
-			serverid =i;
-			mark.tap = 1;
-			mark.scrollX = 0;
-
-		}
-		endDraw += 80;
-		i++;
-	}
-	vita2d_draw_rectangle( draw , 0 ,700 , 40, RGBA8(43, 43, 43, 255));
-	vita2d_pgf_draw_textf(pgf, draw + 20, 30, WHITE, 1.3f , "Servers");
-	return 1;
-}
 
 int mode = 20;
 int control(){// обновление буфера нажатий и проверка кнопок
 
 	sceCtrlPeekBufferPositive(0, &ctrl, 1);
 	if (ctrl.buttons == 0) mark.buttonTap = 0;
-	if (ctrl.buttons == (SCE_CTRL_CIRCLE ) && mark.drawMode > 0 ) {
-		if (mark.buttonTap == 0) mark.drawMode -= 1;
+	if (ctrl.buttons == (SCE_CTRL_CIRCLE ) && mark.RMeny == 1 ) {
+		if (mark.buttonTap == 0) mark.RMeny = 0;
 	  	mark.buttonTap = 1 ;
 	} // это выходы из подменюшек
 	if (ctrl.ly <110 || ctrl.ly > 140){
@@ -481,7 +483,7 @@ int main(){
 		
 
 		
-        vita2d_pvf_draw_textf(pvf , 80, 130, RED , 1.0f, "while working  %s touch[1] %d touch[0] %d" , output, touchs[1], touchs[0]);
+        //vita2d_pvf_draw_textf(pvf , 80, 130, RED , 1.0f, "while working  %s touch[1] %d touch[0] %d" , output, touchs[1], touchs[0]);
 		vita2d_end_drawing();
 		vita2d_common_dialog_update();
 		vita2d_swap_buffers();
