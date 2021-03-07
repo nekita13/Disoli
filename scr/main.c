@@ -81,6 +81,7 @@ struct mark { // это маркеры сгрупированные для уд�
 	int scrollServ;
 	int drawMode;
 	int RMeny;
+	int ls;
 
 } ;
 struct mark mark;
@@ -88,7 +89,8 @@ struct chel men[10] = {
 	{"nikita" , 1 , "ux0:data/VitaPad/kot32.png"},
 	{"andrei" , 2 , "ux0:data/VitaPad/kot64.png"},
 	{"degroid228" , 3 ,  "ux0:data/VitaPad/kot64.png"},
-	{"simpl" , 4 , "ux0:data/VitaPad/kot64.png"}
+	{"simpl" , 4 , "ux0:data/VitaPad/kot64.png"},
+	{"sucks" , 4 , "ux0:data/VitaPad/kot34.png"}
 };
 
 struct masseges mes[50] = {
@@ -105,6 +107,7 @@ struct masseges mes[50] = {
 }; 
 
 struct servers serv[]= {
+	{"личка" , 0  , "ux0:data/VitaPad/kot32.png"}, 
 	{"lokalhost" , 0 ,"ux0:data/VitaPad/12.png" },
 	{"seweranka" , 1 , "ux0:data/VitaPad/11.png"},
 	{"какойто сервер" ,1,"ux0:data/VitaPad/8.png"},
@@ -257,10 +260,10 @@ int cannalBlok( int cnl){ // это блок который находится �
 	vita2d_draw_texture(img[1] , 7, 10);
 
 	while (i <5){	
-		vita2d_pgf_draw_textf(pgf, 20, endDraw, RGBA8(178, 178, 178, 225), 1.0f , "# %s    %d", channel[i], endDraw );
+		
 		if (cnl == i ){
-				vita2d_pgf_draw_textf(pgf, 20, endDraw, WHITE, 1.0f , "# %s    %d", channel[i], endDraw );
-		}
+				vita2d_pgf_draw_textf(pgf, 25, endDraw, WHITE, 1.0f , "# %s    %d", channel[i], endDraw );
+		}else vita2d_pgf_draw_textf(pgf, 20, endDraw, RGBA8(178, 178, 178, 225), 1.0f , "# %s    %d", channel[i], endDraw );
 		
 		if (touchs[1] > endDraw -17 && touchs[1] < endDraw +33 && touchs[0] < 400 && touchs[0]> 0 && mark.tap == 0){// обработка нажатий и изменение канала
 			massuge =i;
@@ -275,6 +278,32 @@ int cannalBlok( int cnl){ // это блок который находится �
 	vita2d_pgf_draw_textf(pgf, 75, 32, WHITE, 1.3f , "%s", server_name[dir ]);
 	return 1 ;
 
+}
+
+int lsBlock(int cnl){
+	int i=0;
+	int endDraw= 100;
+	vita2d_draw_rectangle(0, 0, 300, 900, RGBA8(43, 43, 43, 150));
+
+	while (i <4 ){	
+		vita2d_draw_texture(img[i] , 7, endDraw - 17);
+
+		if (cnl == i ){
+			vita2d_pgf_draw_textf(pgf, 76, endDraw, WHITE, 1.0f , "%s", men[i].name);
+		}else vita2d_pgf_draw_textf(pgf, 70, endDraw, RGBA8(178, 178, 178, 225), 1.0f , "%s", men[i].name );
+
+		if (touchs[1] > endDraw -17 && touchs[1] < endDraw +33 && touchs[0] < 300 && touchs[0]> 0 && mark.tap == 0){// обработка нажатий и изменение канала
+			massuge =i;
+			mark.tap = 1;
+			mark.scrollX = 0;
+		}
+		endDraw += 50;
+		i++;
+		//if (canals[i] == 0) break;
+	}
+
+	vita2d_pgf_draw_textf(pgf, 0, 32, WHITE, 1.1f , "личные сообщения");
+	return 1 ;
 }
 
 int drawInput(){ // ввод сообщений, после отправки прировнять output к "", шоб очистить окно
@@ -301,6 +330,7 @@ int viewServer(int draw){// менюшка которая вылазт спра�
 	int i = 0;
 	int n = sizeof(serv)/sizeof(serv[0]);
 	vita2d_draw_rectangle( draw , 0 ,700 , 600, RGBA8(43, 43, 43, 200));
+
 	for(struct servers *p=serv; p < serv+n; p++){
 		vita2d_draw_texture(img[p->id], draw + 10 , endDraw + mark.scrollServ - 17 );
 		vita2d_pgf_draw_textf(pgf, draw + 80, endDraw + mark.scrollServ + 5, RGBA8(178, 178, 178, 225), 1.3f , " %s", p->name );	
@@ -310,9 +340,12 @@ int viewServer(int draw){// менюшка которая вылазт спра�
 			serverid =i;
 			mark.tap = 1;
 			mark.scrollX = 0;
+			if (serverid == 0) {
+				mark.ls = 1 ; 
+			}else mark.ls = 0;
 
 		}
-		endDraw += 80;
+		 endDraw += 80;
 		i++;
 	}
 	vita2d_draw_rectangle( draw , 0 ,700 , 40, RGBA8(43, 43, 43, 255));
@@ -324,7 +357,7 @@ int viewMassage(int cnl){// основная вызываемая функция
 	int i = 0;
 	endDraw = 360;
 	int n = sizeof(mes)/sizeof(mes[0]);
-	cannalBlok(cnl);
+	
 	for(struct masseges *p=mes; p < mes+n; p++){
 
 		vita2d_draw_texture(img[p->usrid], 310 , endDraw + mark.scrollX - 14);
@@ -342,6 +375,9 @@ int viewMassage(int cnl){// основная вызываемая функция
 		}
 
 	}
+	
+	if (mark.ls == 1 )lsBlock(cnl); else cannalBlok(cnl);
+	
 	drawInput();
 	if (mark.RMeny == 1 ) {// анимация выезда менюшки
 		if (iserv > 300) iserv-= 10;
@@ -433,7 +469,7 @@ int main(){
 	pvf = vita2d_load_default_pvf();
 	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
 	phone  = vita2d_load_PNG_file("ux0:data/VitaPad/phone.png"); //это импорт и загрузка фона в память 
-	int texturi = 5;
+int texturi = 5;
 	
 	while (texturi != 0) // это загрузка текстур в память в переменную img
 	{	--texturi;
@@ -441,6 +477,7 @@ int main(){
 		img[texturi] = vita2d_load_PNG_file(hil);
 		
 	}
+
 
 	mark.drawMode = 2;
 	massuge = 1;
